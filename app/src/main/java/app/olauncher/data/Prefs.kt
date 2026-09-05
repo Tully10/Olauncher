@@ -43,8 +43,6 @@ class Prefs(context: Context) {
     private val SCREEN_TIME_LAST_UPDATED = "SCREEN_TIME_LAST_UPDATED"
     private val LAUNCHER_RESTART_TIMESTAMP = "LAUNCHER_RECREATE_TIMESTAMP"
     private val SHOWN_ON_DAY_OF_YEAR = "SHOWN_ON_DAY_OF_YEAR"
-    // Home button for recents feature disabled
-    // private val HOME_BUTTON_SHOW_RECENTS = "HOME_BUTTON_SHOW_RECENTS"
 
     private val APP_NAME_1 = "APP_NAME_1"
     private val APP_NAME_2 = "APP_NAME_2"
@@ -118,6 +116,9 @@ class Prefs(context: Context) {
     private val IS_SHORTCUT_SWIPE_LEFT = "IS_SHORTCUT_SWIPE_LEFT"
     private val SHORTCUT_ID_SWIPE_RIGHT = "SHORTCUT_ID_SWIPE_RIGHT"
     private val IS_SHORTCUT_SWIPE_RIGHT = "IS_SHORTCUT_SWIPE_RIGHT"
+
+    // Audio pipeline
+    private val AUDIO_PIPELINE_URL = "AUDIO_PIPELINE_URL"
 
     private val prefs: SharedPreferences = context.getSharedPreferences(PREFS_FILENAME, 0)
 
@@ -224,11 +225,6 @@ class Prefs(context: Context) {
     var shownOnDayOfYear: Int
         get() = prefs.getInt(SHOWN_ON_DAY_OF_YEAR, 0)
         set(value) = prefs.edit { putInt(SHOWN_ON_DAY_OF_YEAR, value).apply() }
-
-    // Home button for recents feature disabled
-    // var homeButtonShowRecents: Boolean
-    //     get() = prefs.getBoolean(HOME_BUTTON_SHOW_RECENTS, false)
-    //     set(value) = prefs.edit { putBoolean(HOME_BUTTON_SHOW_RECENTS, value).apply() }
 
     var hiddenApps: MutableSet<String>
         get() = prefs.getStringSet(HIDDEN_APPS, mutableSetOf()) as MutableSet<String>
@@ -537,6 +533,11 @@ class Prefs(context: Context) {
     var isShortcutSwipeRight: Boolean
         get() = prefs.getBoolean(IS_SHORTCUT_SWIPE_RIGHT, false)
         set(value) = prefs.edit { putBoolean(IS_SHORTCUT_SWIPE_RIGHT, value) }
+
+    /** URL of the audio pipeline server, e.g. http://1.2.3.4:8080 */
+    var audioPipelineUrl: String
+        get() = prefs.getString(AUDIO_PIPELINE_URL, "").toString()
+        set(value) = prefs.edit { putString(AUDIO_PIPELINE_URL, value).apply() }
 
     fun getAppName(location: Int): String {
         return when (location) {
