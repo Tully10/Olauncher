@@ -19,6 +19,7 @@ import android.widget.EditText
 import android.widget.FrameLayout
 import android.widget.TextView
 import android.widget.Toast
+import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.os.bundleOf
@@ -58,7 +59,6 @@ import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
-import java.util.TimeZone
 
 class HomeFragment : BaseFragment(), View.OnClickListener, View.OnLongClickListener {
 
@@ -107,11 +107,11 @@ class HomeFragment : BaseFragment(), View.OnClickListener, View.OnLongClickListe
         if (prefs.showStatusBar) showStatusBar()
         else hideStatusBar()
         if (prefs.audioPipelineUrl.isNotBlank()) {
-            binding.tvAudioStatus.visibility = View.VISIBLE
+            binding.tvAudioStatus?.visibility = View.VISIBLE
             statusHandler.post(statusRunnable)
         } else {
-            binding.tvAudioStatus.visibility = View.VISIBLE
-            binding.tvAudioStatus.text = "○ tap to set up audio pipeline"
+            binding.tvAudioStatus?.visibility = View.VISIBLE
+            binding.tvAudioStatus?.text = "○ tap to set up audio pipeline"
         }
     }
 
@@ -196,16 +196,17 @@ class HomeFragment : BaseFragment(), View.OnClickListener, View.OnLongClickListe
     // --- Audio pipeline status widget ---
 
     private fun initAudioStatusWidget() {
-        binding.tvAudioStatus.setOnTouchListener(object : ViewSwipeTouchListener(requireContext(), binding.tvAudioStatus) {
+        val statusView = binding.tvAudioStatus ?: return
+        statusView.setOnTouchListener(object : ViewSwipeTouchListener(requireContext(), statusView) {
             override fun onSwipeUp() { showHealthDashboard() }
-            override fun onSwipeDown() { /* suppress — would expand notifications */ }
+            override fun onSwipeDown() { /* don't propagate */ }
             override fun onClick(view: View) {
                 if (prefs.audioPipelineUrl.isBlank()) showUrlSetupDialog()
                 else showHealthDashboard()
             }
             override fun onLongClick(view: View) { openAudioCaptureApp() }
         })
-        binding.healthDashboard.setOnClickListener { hideHealthDashboard() }
+        binding.healthDashboard?.setOnClickListener { hideHealthDashboard() }
     }
 
     private fun pollAudioStatus() {
@@ -216,56 +217,50 @@ class HomeFragment : BaseFragment(), View.OnClickListener, View.OnLongClickListe
             if (_binding == null) return@launch
             lastKnownStatus = status
             val dot = if (status.recording) "●" else "○"
-            binding.tvAudioStatus.text = "$dot ${status.sessionCount} sessions · ${status.peopleCount} people"
-            if (binding.healthDashboard.isVisible) updateDashboard(status)
+            binding.tvAudioStatus?.text = "$dot ${status.sessionCount} sessions · ${status.peopleCount} people"
+            if (binding.healthDashboard?.isVisible == true) updateDashboard(status)
         }
     }
 
     private fun showHealthDashboard() {
-        binding.healthDashboard.visibility = View.VISIBLE
+        binding.healthDashboard?.visibility = View.VISIBLE
         lastKnownStatus?.let { updateDashboard(it) } ?: run {
-            binding.tvDashRecording.text = "Recording: loading…"
-            binding.tvDashServer.text = "Server: loading…"
-            binding.tvDashQueue.text = "Upload queue: loading…"
-            binding.tvDashTranscript.text = "Last transcript: loading…"
-            binding.tvDashWhisper.text = "Whisper: loading…"
-            binding.tvDashDisk.text = "Disk: loading…"
-            binding.tvDashBedrock.text = "Bedrock: loading…"
+            binding.tvDashRecording?.text = "Recording: loading…"
+            binding.tvDashServer?.text = "Server: loading…"
+            binding.tvDashQueue?.text = "Upload queue: loading…"
+            binding.tvDashTranscript?.text = "Last transcript: loading…"
+            binding.tvDashWhisper?.text = "Whisper: loading…"
+            binding.tvDashDisk?.text = "Disk: loading…"
+            binding.tvDashBedrock?.text = "Bedrock: loading…"
         }
         pollAudioStatus()
     }
 
     private fun hideHealthDashboard() {
-        binding.healthDashboard.visibility = View.GONE
+        binding.healthDashboard?.visibility = View.GONE
     }
 
     private fun updateDashboard(status: AudioPipelineStatus) {
-        binding.tvDashRecording.text = if (status.recording) "● Recording: active" else "○ Recording: paused"
-        binding.tvDashServer.text = "Server: ${if (status.serverReachable) "online" else "offline"}"
-        binding.tvDashQueue.text = "Upload queue: ${status.queueDepth} pending"
-        binding.tvDashTranscript.text = "Last transcript: ${formatTimeAgo(status.lastTranscriptAt)}"
-        binding.tvDashWhisper.text = "Whisper: ${status.whisperStatus}"
-        binding.tvDashDisk.text = if (status.diskFreeGb >= 0)
+        binding.tvDashRecording?.text = if (status.recording) "● Recording: active" else "○ Recording: paused"
+        binding.tvDashServer?.text = "Server: ${if (status.serverReachable) "online" else "offline"}"
+        binding.tvDashQueue?.text = "Upload queue: ${status.queueDepth} pending"
+        val transcriptText = if (status.lastTranscriptAt != null) {
+            try {
+                val then = java.time.Instant.parse(status.lastTranscriptAt)
+                val mins = java.time.Duration.between(then, java.time.Instant.now()).toMinutes()
+                when {
+                    mins < 1 -> "just now"
+                    mins < 60 -> "${mins}m ago"
+                    else -> "${mins / 60}h ago"
+                }
+            } catch (e: Exception) { status.lastTranscriptAt }
+        } else "never"
+        binding.tvDashTranscript?.text = "Last transcript: $transcriptText"
+        binding.tvDashWhisper?.text = "Whisper: ${status.whisperStatus}"
+        binding.tvDashDisk?.text = if (status.diskFreeGb >= 0)
             "Disk: ${"%.1f".format(status.diskFreeGb)} GB free"
         else "Disk: unknown"
-        binding.tvDashBedrock.text = "Bedrock: ${status.bedrockStatus}"
-    }
-
-    private fun formatTimeAgo(isoTimestamp: String?): String {
-        if (isoTimestamp == null) return "never"
-        return try {
-            val sdf = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault())
-            sdf.timeZone = TimeZone.getTimeZone("UTC")
-            val then: Date = sdf.parse(isoTimestamp.take(19)) ?: return isoTimestamp
-            val mins = (System.currentTimeMillis() - then.time) / 60_000
-            when {
-                mins < 1L -> "just now"
-                mins < 60L -> "${mins}m ago"
-                else -> "${mins / 60}h ago"
-            }
-        } catch (e: Exception) {
-            isoTimestamp
-        }
+        binding.tvDashBedrock?.text = "Bedrock: ${status.bedrockStatus}"
     }
 
     private fun showUrlSetupDialog() {
@@ -292,7 +287,7 @@ class HomeFragment : BaseFragment(), View.OnClickListener, View.OnLongClickListe
     private fun openAudioCaptureApp() {
         val intent = requireContext().packageManager.getLaunchIntentForPackage("com.nocturne.audiocapture")
         if (intent != null) startActivity(intent)
-        else Toast.makeText(requireContext(), "Audio Capture app not installed", Toast.LENGTH_SHORT).show()
+        else requireContext().showToast("Audio Capture app not installed")
     }
 
     // --- End audio pipeline status widget ---
@@ -395,7 +390,7 @@ class HomeFragment : BaseFragment(), View.OnClickListener, View.OnLongClickListe
         binding.date.text = dateText.replace(".,", ",")
     }
 
-    @androidx.annotation.RequiresApi(Build.VERSION_CODES.Q)
+    @RequiresApi(Build.VERSION_CODES.Q)
     private fun populateScreenTime() {
         if (requireContext().appUsagePermissionGranted().not()) return
 

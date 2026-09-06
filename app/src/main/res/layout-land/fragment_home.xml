@@ -15,15 +15,7 @@
         android:layout_height="1dp"
         android:contentDescription="@string/lock_layout_description" />
 
-    <!-- Home button for recents feature disabled -->
-    <!-- Placeholder layout for showing recent apps
-    <FrameLayout
-        android:id="@+id/recents"
-        android:layout_width="match_parent"
-        android:layout_height="1dp"
-        android:contentDescription="@string/recents_layout_description" /> -->
-
-    <!-- Clock and calendar-->
+    <!-- Clock, date, and audio status -->
     <LinearLayout
         android:id="@+id/dateTimeLayout"
         android:layout_width="wrap_content"
@@ -55,6 +47,19 @@
             android:paddingHorizontal="3dp"
             android:textSize="@dimen/date_size"
             tools:text="Thu, 30 Dec" />
+
+        <TextView
+            android:id="@+id/tvAudioStatus"
+            style="@style/TextSmall"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:paddingHorizontal="3dp"
+            android:paddingTop="2dp"
+            android:textSize="@dimen/date_size"
+            android:visibility="gone"
+            tools:text="&#x25CF; 3 sessions · 12 people"
+            tools:visibility="visible" />
+
     </LinearLayout>
 
     <!-- Screen time-->
@@ -205,4 +210,90 @@
         android:maxLines="1"
         android:text="@string/set_as_default_launcher_u"
         android:visibility="gone" />
+
+    <!-- Health dashboard overlay -->
+    <FrameLayout
+        android:id="@+id/healthDashboard"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#E6000000"
+        android:clickable="true"
+        android:focusable="true"
+        android:visibility="gone">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_vertical"
+            android:orientation="vertical"
+            android:paddingHorizontal="32dp"
+            android:paddingVertical="16dp">
+
+            <TextView
+                android:id="@+id/tvDashHeader"
+                style="@style/TextMedium"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:paddingBottom="20dp"
+                android:text="Audio Pipeline" />
+
+            <TextView
+                android:id="@+id/tvDashRecording"
+                style="@style/TextDefault"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:paddingVertical="4dp" />
+
+            <TextView
+                android:id="@+id/tvDashServer"
+                style="@style/TextDefault"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:paddingVertical="4dp" />
+
+            <TextView
+                android:id="@+id/tvDashQueue"
+                style="@style/TextDefault"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:paddingVertical="4dp" />
+
+            <TextView
+                android:id="@+id/tvDashTranscript"
+                style="@style/TextDefault"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:paddingVertical="4dp" />
+
+            <TextView
+                android:id="@+id/tvDashWhisper"
+                style="@style/TextDefault"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:paddingVertical="4dp" />
+
+            <TextView
+                android:id="@+id/tvDashDisk"
+                style="@style/TextDefault"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:paddingVertical="4dp" />
+
+            <TextView
+                android:id="@+id/tvDashBedrock"
+                style="@style/TextDefault"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:paddingVertical="4dp" />
+
+            <TextView
+                style="@style/TextSmall"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:paddingTop="28dp"
+                android:text="tap to dismiss" />
+
+        </LinearLayout>
+    </FrameLayout>
+
 </FrameLayout>
