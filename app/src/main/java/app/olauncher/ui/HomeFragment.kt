@@ -19,7 +19,6 @@ import android.widget.EditText
 import android.widget.FrameLayout
 import android.widget.TextView
 import android.widget.Toast
-import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.os.bundleOf
@@ -59,6 +58,7 @@ import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import java.util.TimeZone
 
 class HomeFragment : BaseFragment(), View.OnClickListener, View.OnLongClickListener {
 
@@ -198,7 +198,7 @@ class HomeFragment : BaseFragment(), View.OnClickListener, View.OnLongClickListe
     private fun initAudioStatusWidget() {
         binding.tvAudioStatus.setOnTouchListener(object : ViewSwipeTouchListener(requireContext(), binding.tvAudioStatus) {
             override fun onSwipeUp() { showHealthDashboard() }
-            override fun onSwipeDown() { /* don't propagate — would expand notifications */ }
+            override fun onSwipeDown() { /* suppress — would expand notifications */ }
             override fun onClick(view: View) {
                 if (prefs.audioPipelineUrl.isBlank()) showUrlSetupDialog()
                 else showHealthDashboard()
@@ -243,23 +243,29 @@ class HomeFragment : BaseFragment(), View.OnClickListener, View.OnLongClickListe
         binding.tvDashRecording.text = if (status.recording) "● Recording: active" else "○ Recording: paused"
         binding.tvDashServer.text = "Server: ${if (status.serverReachable) "online" else "offline"}"
         binding.tvDashQueue.text = "Upload queue: ${status.queueDepth} pending"
-        val transcriptText = if (status.lastTranscriptAt != null) {
-            try {
-                val then = java.time.Instant.parse(status.lastTranscriptAt)
-                val mins = java.time.Duration.between(then, java.time.Instant.now()).toMinutes()
-                when {
-                    mins < 1 -> "just now"
-                    mins < 60 -> "${mins}m ago"
-                    else -> "${mins / 60}h ago"
-                }
-            } catch (e: Exception) { status.lastTranscriptAt }
-        } else "never"
-        binding.tvDashTranscript.text = "Last transcript: $transcriptText"
+        binding.tvDashTranscript.text = "Last transcript: ${formatTimeAgo(status.lastTranscriptAt)}"
         binding.tvDashWhisper.text = "Whisper: ${status.whisperStatus}"
         binding.tvDashDisk.text = if (status.diskFreeGb >= 0)
             "Disk: ${"%.1f".format(status.diskFreeGb)} GB free"
         else "Disk: unknown"
         binding.tvDashBedrock.text = "Bedrock: ${status.bedrockStatus}"
+    }
+
+    private fun formatTimeAgo(isoTimestamp: String?): String {
+        if (isoTimestamp == null) return "never"
+        return try {
+            val sdf = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault())
+            sdf.timeZone = TimeZone.getTimeZone("UTC")
+            val then: Date = sdf.parse(isoTimestamp.take(19)) ?: return isoTimestamp
+            val mins = (System.currentTimeMillis() - then.time) / 60_000
+            when {
+                mins < 1L -> "just now"
+                mins < 60L -> "${mins}m ago"
+                else -> "${mins / 60}h ago"
+            }
+        } catch (e: Exception) {
+            isoTimestamp
+        }
     }
 
     private fun showUrlSetupDialog() {
@@ -286,7 +292,7 @@ class HomeFragment : BaseFragment(), View.OnClickListener, View.OnLongClickListe
     private fun openAudioCaptureApp() {
         val intent = requireContext().packageManager.getLaunchIntentForPackage("com.nocturne.audiocapture")
         if (intent != null) startActivity(intent)
-        else requireContext().showToast("Audio Capture app not installed")
+        else Toast.makeText(requireContext(), "Audio Capture app not installed", Toast.LENGTH_SHORT).show()
     }
 
     // --- End audio pipeline status widget ---
@@ -389,7 +395,7 @@ class HomeFragment : BaseFragment(), View.OnClickListener, View.OnLongClickListe
         binding.date.text = dateText.replace(".,", ",")
     }
 
-    @RequiresApi(Build.VERSION_CODES.Q)
+    @androidx.annotation.RequiresApi(Build.VERSION_CODES.Q)
     private fun populateScreenTime() {
         if (requireContext().appUsagePermissionGranted().not()) return
 
